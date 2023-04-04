@@ -2,3 +2,4 @@
 .DS_Store
 esp-idf/cmake-build-debug
 .idea
+esp-idf/managed_components

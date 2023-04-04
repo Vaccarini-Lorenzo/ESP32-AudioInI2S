@@ -4,7 +4,7 @@
 
 #include "include/AudioInI2S.h"
 
-AudioInI2S::AudioInI2S(int bck_pin, int ws_pin, int data_pin, int channel_pin, i2s_channel_fmt_t channel_format)
+AudioInI2S::AudioInI2S(gpio_num_t bck_pin, gpio_num_t ws_pin, gpio_num_t data_pin, gpio_num_t channel_pin, i2s_channel_fmt_t channel_format)
 {
     _bck_pin = bck_pin;
     _ws_pin = ws_pin;
