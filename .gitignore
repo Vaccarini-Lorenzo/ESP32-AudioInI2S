@@ -1,2 +1,4 @@
 .vscode
 .DS_Store
+esp-idf/cmake-build-debug
+.idea
