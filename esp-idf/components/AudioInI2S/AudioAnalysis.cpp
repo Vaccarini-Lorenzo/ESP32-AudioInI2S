@@ -17,6 +17,7 @@ AudioAnalysis::AudioAnalysis()
 
 void AudioAnalysis::computeFFT(int32_t *samples, int sampleSize, int sampleRate)
 {
+    //std::cout << "start ftt computation" << std::endl;
     _samples = samples;
     if (_sampleSize != sampleSize || _sampleRate != sampleRate)
     {
@@ -31,6 +32,8 @@ void AudioAnalysis::computeFFT(int32_t *samples, int sampleSize, int sampleRate)
         _imag[i] = 0;
     }
 
+    std::cout << "real and img ok" << std::endl;
+
     // Allocates buffer internally
     esp_err_t ret = dsps_fft2r_init_fc32(NULL, CONFIG_DSP_MAX_FFT_SIZE);
     if (ret  != ESP_OK)
@@ -39,39 +42,56 @@ void AudioAnalysis::computeFFT(int32_t *samples, int sampleSize, int sampleRate)
         return;
     }
 
-    float hannWindow[sampleSize];
-    float complexVector[sampleSize * 2];
+    std::cout << "buffer allocated" << std::endl;
+
+    float hannWindow[_sampleSize];
+    float complexVector[_sampleSize * 2];
 
     // dc removal
     int32_t mean = 0;
-    for (int i=0; i<sampleSize; i++){
+    for (int i=0; i<_sampleSize; i++){
         mean += samples[i];
     }
     mean /= sampleSize;
-    for (int i=0; i<sampleSize; i++){
+    for (int i=0; i<_sampleSize; i++){
         _real[i] -= mean;
     }
+
+    std::cout << "dc removal ok" << std::endl;
 
     // Compute the Hann window
     // The library doesn't provide a off-the-shelf hamming window
     dsps_wind_hann_f32(hannWindow, sampleSize);
 
-    for (int i=0 ; i<sampleSize ; i++){
+    std::cout << "hann window ok" << std::endl;
+
+    for (int i=0 ; i<_sampleSize ; i++){
         // Real part
         complexVector[i*2 + 0] = _real[i] * hannWindow[i];
         // Imaginary part, _imag[i] = 0
         complexVector[i*2 + 1] = _imag[i];
     }
 
+    std::cout << "complex vector ok" << std::endl;
+
     // Compute FFT
-    dsps_fft2r_fc32(complexVector, sampleSize);
+    dsps_fft2r_fc32(complexVector, _sampleSize);
+
+    std::cout << "FTT computation ok" << std::endl;
+
     // Bit reverse
-    dsps_bit_rev_fc32(complexVector, sampleSize);
+    dsps_bit_rev_fc32(complexVector, _sampleSize);
+
+    std::cout << "bit reverse ok" << std::endl;
+
 
     // Compute magnitude
-    for (int i=0; i<sampleSize; i++){
+    for (int i=0; i<_sampleSize; i++){
         _real[i] = sqrt((_real[i]*_real[i])+(_imag[i]*_imag[i]));
     }
+
+    std::cout << "magnitude" << std::endl;
+
 }
 
 float *AudioAnalysis::getReal()
