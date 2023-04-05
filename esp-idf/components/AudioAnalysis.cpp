@@ -4,6 +4,7 @@
 
 #include "include/AudioAnalysis.h"
 #include "esp_dsp.h"
+#include "math.h"
 
 AudioAnalysis::AudioAnalysis()
 {
@@ -41,20 +42,36 @@ void AudioAnalysis::computeFFT(int32_t *samples, int sampleSize, int sampleRate)
     float hannWindow[sampleSize];
     float complexVector[sampleSize * 2];
 
+    // dc removal
+    int32_t mean = 0;
+    for (int i=0; i<sampleSize; i++){
+        mean += samples[i];
+    }
+    mean /= sampleSize;
+    for (int i=0; i<sampleSize; i++){
+        _real[i] -= mean;
+    }
+
+    // Compute the Hann window
+    // The library doesn't provide a off-the-shelf hamming window
     dsps_wind_hann_f32(hannWindow, sampleSize);
 
     for (int i=0 ; i<sampleSize ; i++){
+        // Real part
         complexVector[i*2 + 0] = _real[i] * hannWindow[i];
-        complexVector[i*2 + 1] = _imag[i] * hannWindow[i];
+        // Imaginary part, _imag[i] = 0
+        complexVector[i*2 + 1] = _imag[i];
     }
+
     // Compute FFT
     dsps_fft2r_fc32(complexVector, sampleSize);
     // Bit reverse
     dsps_bit_rev_fc32(complexVector, sampleSize);
-    // _FFT->dcRemoval();
-    // _FFT->windowing(FFTWindow::Hamming, FFTDirection::Forward, false); /* Weigh data (compensated) */
-    // _FFT->compute(FFTDirection::Forward);                              /* Compute FFT */
-    // _FFT->complexToMagnitude();                                        /* Compute magnitudes */
+
+    // Compute magnitude
+    for (int i=0; i<sampleSize; i++){
+        _real[i] = sqrt((_real[i]*_real[i])+(_imag[i]*_imag[i]));
+    }
 }
 
 float *AudioAnalysis::getReal()
