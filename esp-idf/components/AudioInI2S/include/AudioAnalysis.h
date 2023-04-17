@@ -23,6 +23,8 @@ public:
     };
 
     AudioAnalysis();
+    AudioAnalysis(int sampleSize, int sampleRate, int bandSize);
+    ~AudioAnalysis();
     /* FFT Functions */
     void computeFFT(int32_t *samples, int sampleSize, int sampleRate);  // calculates FFT on sample data
     float *getReal();                                                   // gets the Real values after FFT calculation
@@ -93,19 +95,19 @@ protected:
     int32_t *_samples;
     int _sampleSize;
     int _sampleRate;
-    float _real[SAMPLE_SIZE];
-    float _imag[SAMPLE_SIZE];
-    float _weighingFactors[SAMPLE_SIZE];
+    float *_real;
+    float *_imag;
+    float *_weighingFactors;
 
     /* Band Frequency Variables */
     float _noiseFloor = 0;
-    int _bandSize = BAND_SIZE;
-    float _bands[BAND_SIZE];
-    float _peaks[BAND_SIZE];
-    float _peakFallRate[BAND_SIZE];
-    float _peaksNorms[BAND_SIZE];
-    float _bandsNorms[BAND_SIZE];
-    float _bandEq[BAND_SIZE];
+    int _bandSize;
+    float *_bands;
+    float *_peaks;
+    float *_peakFallRate;
+    float *_peaksNorms;
+    float *_bandsNorms;
+    float *_bandEq;
 
     float _bandAvg;
     float _peakAvg;

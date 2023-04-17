@@ -4,15 +4,6 @@
 
 #include "include/AudioInI2S.h"
 
-AudioInI2S::AudioInI2S(gpio_num_t bck_pin, gpio_num_t ws_pin, gpio_num_t data_pin, gpio_num_t channel_pin, i2s_channel_fmt_t channel_format)
-{
-    _bck_pin = bck_pin;
-    _ws_pin = ws_pin;
-    _data_pin = data_pin;
-    _channel_pin = channel_pin;
-    _channel_format = channel_format;
-}
-
 void AudioInI2S::begin(int sample_size, int sample_rate, i2s_port_t i2s_port_number)
 {
     if (_channel_pin >= 0)

@@ -4,15 +4,9 @@
 
 #ifndef ESP32_AUDIOINI2S_AUDIOINI2S_H
 #define ESP32_AUDIOINI2S_AUDIOINI2S_H
-
 #include <driver/i2s.h>
 
 class AudioInI2S {
-public:
-    AudioInI2S(gpio_num_t bck_pin, gpio_num_t ws_pin, gpio_num_t data_pin, gpio_num_t channel_pin = GPIO_NUM_NC, i2s_channel_fmt_t channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT);
-    void read(int32_t _samples[]);
-    void begin(int sample_size, int sample_rate = 44100, i2s_port_t i2s_port_number = I2S_NUM_0);
-
 private:
     gpio_num_t _bck_pin;
     gpio_num_t _ws_pin;
@@ -42,6 +36,16 @@ private:
             .data_out_num = I2S_PIN_NO_CHANGE,
             .data_in_num = I2S_PIN_NO_CHANGE // set in begin()
     };
+public:
+    AudioInI2S(gpio_num_t bck_pin, gpio_num_t ws_pin, gpio_num_t data_pin, gpio_num_t channel_pin = GPIO_NUM_NC, i2s_channel_fmt_t channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT){
+        _bck_pin = bck_pin;
+        _ws_pin = ws_pin;
+        _data_pin = data_pin;
+        _channel_pin = channel_pin;
+        _channel_format = channel_format;
+    }
+    void read(int32_t _samples[]);
+    void begin(int sample_size, int sample_rate = 44100, i2s_port_t i2s_port_number = I2S_NUM_0);
 };
 
 #endif //ESP32_AUDIOINI2S_AUDIOINI2S_H

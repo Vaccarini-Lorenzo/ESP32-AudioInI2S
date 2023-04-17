@@ -5,6 +5,7 @@
 #include "include/AudioAnalysis.h"
 #include "esp_dsp.h"
 #include "math.h"
+#define SAMPLE_SIZE         1024
 
 AudioAnalysis::AudioAnalysis()
 {
@@ -15,10 +16,44 @@ AudioAnalysis::AudioAnalysis()
     }
 }
 
+AudioAnalysis::AudioAnalysis(int sampleSize, int sampleRate, int bandSize)
+{
+    _sampleSize = sampleSize;
+    _sampleRate = sampleRate;
+    _bandSize = bandSize;
+    _real = (float*)malloc(sizeof(float)*sampleSize);
+    _imag = (float*)malloc(sizeof(float)*sampleSize);
+    _weighingFactors = (float*)malloc(sizeof(float)*sampleSize);
+    _bands = (float*)malloc(sizeof(float)*bandSize);
+    _peaks = (float*)malloc(sizeof(float)*bandSize);
+    _peakFallRate = (float*)malloc(sizeof(float)*bandSize);
+    _peaksNorms = (float*)malloc(sizeof(float)*bandSize);
+    _bandsNorms = (float*)malloc(sizeof(float)*bandSize);
+    _bandEq = (float*)malloc(sizeof(float)*bandSize);
+    // set default eq levels;
+    for (int i = 0; i < _bandSize; i++)
+    {
+        _bandEq[i] = 1.0;
+    }
+}
+
+AudioAnalysis::~AudioAnalysis(){
+    free(_real);
+    free(_imag);
+    free(_weighingFactors);
+    free(_bands);
+    free(_peaks);
+    free(_peakFallRate);
+    free(_peaksNorms);
+    free(_bandsNorms);
+    free(_bandEq);
+}
+
 void AudioAnalysis::computeFFT(int32_t *samples, int sampleSize, int sampleRate)
 {
     //std::cout << "start ftt computation" << std::endl;
     _samples = samples;
+
     if (_sampleSize != sampleSize || _sampleRate != sampleRate)
     {
         _sampleSize = sampleSize;
@@ -26,13 +61,11 @@ void AudioAnalysis::computeFFT(int32_t *samples, int sampleSize, int sampleRate)
     }
 
     // prep samples for analysis
-    for (int i = 0; i < _sampleSize; i++)
+    for (int i=0; i<sampleSize ; i++)
     {
         _real[i] = samples[i];
         _imag[i] = 0;
     }
-
-    std::cout << "real and img ok" << std::endl;
 
     // Allocates buffer internally
     esp_err_t ret = dsps_fft2r_init_fc32(NULL, CONFIG_DSP_MAX_FFT_SIZE);
@@ -42,56 +75,69 @@ void AudioAnalysis::computeFFT(int32_t *samples, int sampleSize, int sampleRate)
         return;
     }
 
-    std::cout << "buffer allocated" << std::endl;
-
-    float hannWindow[_sampleSize];
-    float complexVector[_sampleSize * 2];
+    float hannWindow[sampleSize];
+    float complexVector[sampleSize * 2];
 
     // dc removal
     int32_t mean = 0;
-    for (int i=0; i<_sampleSize; i++){
+    for (int i=0; i<sampleSize; i++){
         mean += samples[i];
     }
     mean /= sampleSize;
-    for (int i=0; i<_sampleSize; i++){
+    for (int i=0; i<sampleSize; i++){
         _real[i] -= mean;
     }
-
-    std::cout << "dc removal ok" << std::endl;
 
     // Compute the Hann window
     // The library doesn't provide a off-the-shelf hamming window
     dsps_wind_hann_f32(hannWindow, sampleSize);
 
-    std::cout << "hann window ok" << std::endl;
+    //std::cout << "hann window ok" << std::endl;
 
-    for (int i=0 ; i<_sampleSize ; i++){
+    for (int i=0 ; i<sampleSize ; i++){
         // Real part
         complexVector[i*2 + 0] = _real[i] * hannWindow[i];
         // Imaginary part, _imag[i] = 0
         complexVector[i*2 + 1] = _imag[i];
     }
+    /*
+     *
+    data is complexVector
+    length is sampleSize
 
-    std::cout << "complex vector ok" << std::endl;
-
-    // Compute FFT
-    dsps_fft2r_fc32(complexVector, _sampleSize);
-
-    std::cout << "FTT computation ok" << std::endl;
-
+    dsps_fft2r_fc32(data, length);
     // Bit reverse
-    dsps_bit_rev_fc32(complexVector, _sampleSize);
+    dsps_bit_rev_fc32(data, length);
+    // Convert one complex vector to two complex vectors
+    dsps_cplx2reC_fc32(data, length);
 
-    std::cout << "bit reverse ok" << std::endl;
-
-
-    // Compute magnitude
-    for (int i=0; i<_sampleSize; i++){
-        _real[i] = sqrt((_real[i]*_real[i])+(_imag[i]*_imag[i]));
+    for (int i = 0 ; i < length/2 ; i++) {
+        data[i] = 10 * log10f((data[i * 2 + 0] * data[i * 2 + 0] + data[i * 2 + 1] * data[i * 2 + 1])/N);
     }
 
-    std::cout << "magnitude" << std::endl;
+    // Show power spectrum in 64x10 window from -100 to 0 dB from 0..N/4 samples
 
+    dsps_view(data, length/2, 64, 10,  -120, 40, '|');
+     */
+
+    // Compute FFT
+    dsps_fft2r_fc32(complexVector, sampleSize);
+
+    // Bit reverse
+    dsps_bit_rev_fc32(complexVector, sampleSize);
+
+    // Convert one complex vector to two complex vectors
+    dsps_cplx2reC_fc32(complexVector, sampleSize);
+
+    /*
+    // Compute magnitude
+    for (int i=0; i<sampleSize; i++){
+        _real[i] = sqrt((_real[i]*_real[i])+(_imag[i]*_imag[i]));
+    }
+     */
+
+    // Deinit structure
+    dsps_fft2r_deinit_fc32();
 }
 
 float *AudioAnalysis::getReal()
